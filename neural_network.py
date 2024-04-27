@@ -55,7 +55,7 @@ class NeuralNetwork:
             hidden_layer_outputs = np.zeros(self.hidden_layers_sizes[i])
             for j in range(self.hidden_layers_sizes[i]):
                 self.hidden_layers[i][j] = Neuron(hidden_layer_inputs)
-                hidden_layer_outputs[i] = self.hidden_layers[i][j].output
+                hidden_layer_outputs[j] = self.hidden_layers[i][j].output
 
             hidden_layer_inputs = hidden_layer_outputs
 
@@ -78,4 +78,4 @@ class NeuralNetwork:
 
 if __name__ == '__main__':
     neural_network = NeuralNetwork(2, 2, [2, 2], 2)
-    print(neural_network.feedforward(np.array([2, 2])))
+    print(neural_network.feedforward(np.array([690, 420])))
