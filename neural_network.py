@@ -75,6 +75,11 @@ class NeuralNetwork:
         return output_values
 
     def backpropagation(self, output_values):
+        total_error = 0
+        for i, neuron in enumerate(self.output_layer):
+            total_error += ((neuron.output - output_values[i]) ** 2) / 2
+
+        total_error /= self.output_layer_size
         gradients = []
         output_layer_gradient = [
             (neuron.output - output_values[i]) *
@@ -120,9 +125,9 @@ class NeuralNetwork:
             neuron.update(input_values=None, weights=weights[i], bias=biases[i])
 
     def train(self, train_data, learning_rate, epochs):
-        # TODO: update training method
         for _ in range(epochs):
+            random.shuffle(train_data)
             for sample in train_data:
-                self.feedforward(sample)
-                gradients = self.backpropagation(sample)
+                self.feedforward(sample[0])
+                gradients = self.backpropagation(sample[1])
                 self.adjust_weights(gradients, learning_rate)
