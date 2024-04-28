@@ -1,15 +1,16 @@
 import numpy as np
+import random
 
 
 class Neuron:
-    def __init__(self, input_size, input_values=None, weights=None, bias=0):
+    def __init__(self, input_size, input_values=None, weights=None):
         self.input_values = input_values
         if weights is None:
-            self.weights = np.random.randn(input_size)
+            self.weights = 0.5 * np.random.randn(input_size)
         else:
             self.weights = weights
 
-        self.bias = bias
+        self.bias = random.uniform(-0.5, 0.5)
         if input_values is not None:
             self.net_sum = self.calculate_net_sum()
             self.output = self.calculate_output()
@@ -60,6 +61,7 @@ class NeuralNetwork:
             self.output_layer[i] = Neuron(neuron_input_size)
 
     def feedforward(self, input_values):
+        input_values = np.array(input_values)
         for hidden_layer in self.hidden_layers:
             for neuron in hidden_layer:
                 neuron.update(input_values, weights=None, bias=None)
@@ -85,15 +87,11 @@ class NeuralNetwork:
         layer_above = self.output_layer
         for hidden_layer in reversed(self.hidden_layers):
             hidden_layer_gradient = []
-            layer_above_weights = []
-            for neuron in layer_above:
-                layer_above_weights.append(neuron.weights)
-
-            layer_above_weights = np.array(layer_above_weights)
+            layer_above_weights = np.array([neuron.weights for neuron in layer_above])
             for i, neuron in enumerate(hidden_layer):
                 neuron_weights = [weight[i] for weight in layer_above_weights]
                 neuron_errors = [error[i] for error in gradient_above]
-                layer_above_errors = np.sum(np.multiply(neuron_weights, neuron_errors))
+                layer_above_errors = np.dot(neuron_weights, neuron_errors)
                 errors = layer_above_errors * neuron.calculate_output_derivative() * neuron.input_values
                 hidden_layer_gradient.append(errors)
 
@@ -106,27 +104,23 @@ class NeuralNetwork:
     def adjust_weights(self, gradients, learning_rate):
         for i, hidden_layer in enumerate(self.hidden_layers):
             errors = np.array(gradients[i])
-            weights = []
-            for neuron in hidden_layer:
-                weights.append(neuron.weights)
-
-            weights = np.array(weights)
+            weights = np.array([neuron.weights for neuron in hidden_layer])
+            biases = np.array([neuron.bias for neuron in hidden_layer])
             weights -= learning_rate * errors
-
+            biases -= learning_rate * np.sum(errors, axis=1)
             for j, neuron in enumerate(hidden_layer):
-                neuron.update(input_values=None, weights=weights[j], bias=None)
+                neuron.update(input_values=None, weights=weights[j], bias=biases[j])
 
         errors = np.array(gradients[-1])
-        weights = []
-        for neuron in self.output_layer:
-            weights.append(neuron.weights)
-
-        weights = np.array(weights)
+        weights = np.array([neuron.weights for neuron in self.output_layer])
+        biases = np.array([neuron.bias for neuron in self.output_layer])
         weights -= learning_rate * errors
+        biases -= learning_rate * np.sum(errors, axis=1)
         for i, neuron in enumerate(self.output_layer):
-            neuron.update(input_values=None, weights=weights[i], bias=None)
+            neuron.update(input_values=None, weights=weights[i], bias=biases[i])
 
     def train(self, train_data, learning_rate, epochs):
+        # TODO: update training method
         for _ in range(epochs):
             for sample in train_data:
                 self.feedforward(sample)
