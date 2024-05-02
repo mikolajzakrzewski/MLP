@@ -75,11 +75,11 @@ class NeuralNetwork:
         return output_values
 
     def backpropagation(self, output):
-        cost = 0
+        total_err = 0
         for i, neuron in enumerate(self.output_layer):
-            cost += ((neuron.output - output[i]) ** 2) / 2
+            total_err += ((neuron.output - output[i]) ** 2) / 2
 
-        cost /= self.output_layer_size
+        total_err /= self.output_layer_size
         weight_grads = []
         bias_grads = []
         weight_grad = []
@@ -111,7 +111,7 @@ class NeuralNetwork:
             grad_above = weight_gradient
             layer_above = hidden_layer
 
-        return weight_grads[::-1], bias_grads[::-1]
+        return total_err, weight_grads[::-1], bias_grads[::-1]
 
     def adjust(self, weight_grads, bias_grads, learning_rate):
         for i, hidden_layer in enumerate(self.hidden_layers):
@@ -134,11 +134,35 @@ class NeuralNetwork:
         for i, neuron in enumerate(self.output_layer):
             neuron.update(input_values=None, weights=weights[i], bias=biases[i])
 
-    def train(self, train_data, learning_rate, epochs):
-        for _ in range(epochs):
-            random.shuffle(train_data)
-            for sample in train_data:
-                self.feedforward(sample[0])
-                weight_grads, bias_grads = self.backpropagation(sample[1])
-                self.adjust(weight_grads, bias_grads, learning_rate)
+    def train(self, train_data, learning_rate, epochs=None, stop_err=None):
+        if epochs is not None:
+            for _ in range(epochs):
+                random.shuffle(train_data)
+                for sample in train_data:
+                    self.feedforward(sample[0])
+                    cost, weight_grads, bias_grads = self.backpropagation(sample[1])
+                    self.adjust(weight_grads, bias_grads, learning_rate)
 
+        if stop_err is not None:
+            random.shuffle(train_data)
+            while True:
+                for sample in train_data:
+                    self.feedforward(sample[0])
+                    total_error, weight_grads, bias_grads = self.backpropagation(sample[1])
+                    if total_error < stop_err:
+                        return
+
+                    self.adjust(weight_grads, bias_grads, learning_rate)
+
+        if stop_err is not None and epochs is not None:
+            for _ in range(epochs):
+                random.shuffle(train_data)
+                for sample in train_data:
+                    self.feedforward(sample[0])
+                    total_error, weight_grads, bias_grads = self.backpropagation(sample[1])
+                    if total_error > stop_err:
+                        return
+
+                    self.adjust(weight_grads, bias_grads, learning_rate)
+
+    
