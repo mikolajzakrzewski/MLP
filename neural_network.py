@@ -113,35 +113,53 @@ class NeuralNetwork:
 
         return total_err, weight_grads[::-1], bias_grads[::-1]
 
-    def adjust(self, weight_grads, bias_grads, learning_rate):
+    def adjust(self, weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum):
         for i, hidden_layer in enumerate(self.hidden_layers):
             weight_errs = np.array(weight_grads[i])
-            bias_errs = np.array(bias_grads[i])
             weights = np.array([neuron.weights for neuron in hidden_layer])
-            biases = np.array([neuron.bias for neuron in hidden_layer])
             weights -= learning_rate * weight_errs
+            bias_errs = np.array(bias_grads[i])
+            biases = np.array([neuron.bias for neuron in hidden_layer])
             biases -= learning_rate * bias_errs
+            if prev_weight_grads is not None and prev_bias_grads is not None:
+                prev_weight_errs = np.array(prev_weight_grads[i])
+                weights -= momentum * learning_rate * prev_weight_errs
+                prev_bias_errs = np.array(prev_bias_grads[i])
+                biases -= momentum * learning_rate * prev_bias_errs
+
             for j, neuron in enumerate(hidden_layer):
                 neuron.update(input_values=None, weights=weights[j], bias=biases[j])
 
         weight_errs = np.array(weight_grads[-1])
-        bias_errs = np.array(bias_grads[-1])
         weights = np.array([neuron.weights for neuron in self.output_layer])
-        biases = np.array([neuron.bias for neuron in self.output_layer])
         weights -= learning_rate * weight_errs
+        bias_errs = np.array(bias_grads[-1])
+        biases = np.array([neuron.bias for neuron in self.output_layer])
         biases -= learning_rate * bias_errs
+        if prev_weight_grads is not None and prev_bias_grads is not None:
+            prev_weight_errs = np.array(prev_weight_grads[-1])
+            weights -= momentum * learning_rate * prev_weight_errs
+            prev_bias_errs = np.array(prev_bias_grads[-1])
+            biases -= momentum * learning_rate * prev_bias_errs
 
         for i, neuron in enumerate(self.output_layer):
             neuron.update(input_values=None, weights=weights[i], bias=biases[i])
 
-    def train(self, train_data, learning_rate, epochs=None, stop_err=None):
+    def train(self, train_data, learning_rate, epochs=None, stop_err=None, momentum=0):
+        prev_weight_grads = None
+        prev_bias_grads = None
+
+        if epochs is None and stop_err is None:
+            raise ValueError("Either epochs or stop_err must be specified")
+
         if epochs is not None:
             for _ in range(epochs):
                 random.shuffle(train_data)
                 for sample in train_data:
                     self.feedforward(sample[0])
                     cost, weight_grads, bias_grads = self.backpropagation(sample[1])
-                    self.adjust(weight_grads, bias_grads, learning_rate)
+                    self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
+                    prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
 
         if stop_err is not None:
             random.shuffle(train_data)
@@ -152,7 +170,8 @@ class NeuralNetwork:
                     if total_error < stop_err:
                         return
 
-                    self.adjust(weight_grads, bias_grads, learning_rate)
+                    self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
+                    prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
 
         if stop_err is not None and epochs is not None:
             for _ in range(epochs):
@@ -163,6 +182,5 @@ class NeuralNetwork:
                     if total_error > stop_err:
                         return
 
-                    self.adjust(weight_grads, bias_grads, learning_rate)
-
-    
+                    self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
+                    prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
