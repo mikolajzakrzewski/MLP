@@ -3,14 +3,19 @@ import random
 
 
 class Neuron:
-    def __init__(self, input_size, input_values=None, weights=None):
+    def __init__(self, input_size, input_values=None, weights=None, include_bias=True):
         self.input_values = input_values
         if weights is None:
             self.weights = 0.5 * np.random.randn(input_size)
         else:
             self.weights = weights
 
-        self.bias = random.uniform(-0.5, 0.5)
+        self.include_bias = include_bias
+        if include_bias:
+            self.bias = random.uniform(-0.5, 0.5)
+        else:
+            self.bias = 0.0
+
         if input_values is not None:
             self.net_sum = self.calculate_net_sum()
             self.output = self.calculate_output()
@@ -34,7 +39,7 @@ class Neuron:
         if weights is not None:
             self.weights = np.array(weights)
 
-        if bias is not None:
+        if bias is not None and self.include_bias:
             self.bias = bias
 
         if self.input_values is not None and self.weights is not None and self.bias is not None:
@@ -43,48 +48,44 @@ class Neuron:
 
 
 class NeuralNetwork:
-    def __init__(self, input_layer_size, hidden_layers_num, hidden_layers_sizes, output_layer_size):
+    def __init__(self, input_layer_size, hidden_layers_num, hidden_layers_sizes, output_layer_size, include_bias=True):
         self.input_layer_size = input_layer_size
         self.hidden_layers_num = hidden_layers_num
-        self.hidden_layers_sizes = hidden_layers_sizes
-        self.hidden_layers = [np.empty(hidden_layer_size, dtype=Neuron) for hidden_layer_size in hidden_layers_sizes]
         neuron_input_size = input_layer_size
-        for hidden_layer in self.hidden_layers:
-            for i in range(len(hidden_layer)):
-                hidden_layer[i] = Neuron(neuron_input_size)
+        layers_sizes = hidden_layers_sizes
+        layers_sizes.append(output_layer_size)
+        self.layers_sizes = layers_sizes
+        self.layers = [np.empty(layer_size, dtype=Neuron) for layer_size in layers_sizes]
+        for layer in self.layers:
+            layer_size = len(layer)
+            for i in range(layer_size):
+                layer[i] = Neuron(neuron_input_size, include_bias=include_bias)
 
-            neuron_input_size = len(hidden_layer)
+            neuron_input_size = layer_size
 
-        self.output_layer_size = output_layer_size
-        self.output_layer = np.empty(self.output_layer_size, dtype=Neuron)
-        for i in range(len(self.output_layer)):
-            self.output_layer[i] = Neuron(neuron_input_size)
+        self.include_bias = include_bias
 
-    def feedforward(self, input_values):
-        input_values = np.array(input_values)
-        for hidden_layer in self.hidden_layers:
-            for neuron in hidden_layer:
-                neuron.update(input_values, weights=None, bias=None)
+    def feedforward(self, values):
+        values = np.array(values)
+        for layer in self.layers:
+            for neuron in layer:
+                neuron.update(values)
 
-            input_values = [neuron.output for neuron in hidden_layer]
+            values = [neuron.output for neuron in layer]
 
-        for neuron in self.output_layer:
-            neuron.update(input_values, weights=None, bias=None)
-
-        output_values = [neuron.output for neuron in self.output_layer]
-        return output_values
+        return values
 
     def backpropagation(self, output):
         total_err = 0
-        for i, neuron in enumerate(self.output_layer):
+        for i, neuron in enumerate(self.layers[-1]):
             total_err += ((neuron.output - output[i]) ** 2) / 2
 
-        total_err /= self.output_layer_size
+        total_err /= self.layers_sizes[-1]
         weight_grads = []
         bias_grads = []
         weight_grad = []
         bias_grad = []
-        for i, neuron in enumerate(self.output_layer):
+        for i, neuron in enumerate(self.layers[-1]):
             error_signal = (neuron.output - output[i]) * neuron.calculate_output_derivative()
             bias_grad.append(error_signal)
             errors = error_signal * neuron.input_values
@@ -93,8 +94,8 @@ class NeuralNetwork:
         weight_grads.append(weight_grad)
         bias_grads.append(bias_grad)
         grad_above = weight_grad
-        layer_above = self.output_layer
-        for hidden_layer in reversed(self.hidden_layers):
+        layer_above = self.layers[-1]
+        for hidden_layer in reversed(self.layers[:-1]):
             weight_gradient = []
             bias_gradient = []
             layer_above_weights = np.array([neuron.weights for neuron in layer_above])
@@ -114,12 +115,12 @@ class NeuralNetwork:
         return total_err, weight_grads[::-1], bias_grads[::-1]
 
     def adjust(self, weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum):
-        for i, hidden_layer in enumerate(self.hidden_layers):
+        for i, layer in enumerate(self.layers):
             weight_errs = np.array(weight_grads[i])
-            weights = np.array([neuron.weights for neuron in hidden_layer])
+            weights = np.array([neuron.weights for neuron in layer])
             weights -= learning_rate * weight_errs
             bias_errs = np.array(bias_grads[i])
-            biases = np.array([neuron.bias for neuron in hidden_layer])
+            biases = np.array([neuron.bias for neuron in layer])
             biases -= learning_rate * bias_errs
             if prev_weight_grads is not None and prev_bias_grads is not None:
                 prev_weight_errs = np.array(prev_weight_grads[i])
@@ -127,25 +128,10 @@ class NeuralNetwork:
                 prev_bias_errs = np.array(prev_bias_grads[i])
                 biases -= momentum * learning_rate * prev_bias_errs
 
-            for j, neuron in enumerate(hidden_layer):
+            for j, neuron in enumerate(layer):
                 neuron.update(input_values=None, weights=weights[j], bias=biases[j])
 
-        weight_errs = np.array(weight_grads[-1])
-        weights = np.array([neuron.weights for neuron in self.output_layer])
-        weights -= learning_rate * weight_errs
-        bias_errs = np.array(bias_grads[-1])
-        biases = np.array([neuron.bias for neuron in self.output_layer])
-        biases -= learning_rate * bias_errs
-        if prev_weight_grads is not None and prev_bias_grads is not None:
-            prev_weight_errs = np.array(prev_weight_grads[-1])
-            weights -= momentum * learning_rate * prev_weight_errs
-            prev_bias_errs = np.array(prev_bias_grads[-1])
-            biases -= momentum * learning_rate * prev_bias_errs
-
-        for i, neuron in enumerate(self.output_layer):
-            neuron.update(input_values=None, weights=weights[i], bias=biases[i])
-
-    def train(self, train_data, learning_rate, epochs=None, stop_err=None, momentum=0):
+    def train(self, train_data, learning_rate, epochs=None, stop_err=None, momentum=0.0, shuffle_samples=True):
         prev_weight_grads = None
         prev_bias_grads = None
 
@@ -154,7 +140,9 @@ class NeuralNetwork:
 
         if epochs is not None:
             for _ in range(epochs):
-                random.shuffle(train_data)
+                if shuffle_samples:
+                    random.shuffle(train_data)
+
                 for sample in train_data:
                     self.feedforward(sample[0])
                     cost, weight_grads, bias_grads = self.backpropagation(sample[1])
@@ -162,8 +150,10 @@ class NeuralNetwork:
                     prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
 
         if stop_err is not None:
-            random.shuffle(train_data)
             while True:
+                if shuffle_samples:
+                    random.shuffle(train_data)
+
                 for sample in train_data:
                     self.feedforward(sample[0])
                     total_error, weight_grads, bias_grads = self.backpropagation(sample[1])
@@ -175,7 +165,9 @@ class NeuralNetwork:
 
         if stop_err is not None and epochs is not None:
             for _ in range(epochs):
-                random.shuffle(train_data)
+                if shuffle_samples:
+                    random.shuffle(train_data)
+
                 for sample in train_data:
                     self.feedforward(sample[0])
                     total_error, weight_grads, bias_grads = self.backpropagation(sample[1])
