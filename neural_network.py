@@ -131,6 +131,24 @@ class NeuralNetwork:
             for j, neuron in enumerate(layer):
                 neuron.update(input_values=None, weights=weights[j], bias=biases[j])
 
+    def epoch(self, train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples):
+        if shuffle_samples:
+            random.shuffle(train_data)
+
+        for sample in train_data:
+            self.feedforward(sample[0])
+            total_err, weight_grads, bias_grads = self.backpropagation(sample[1])
+            if stop_err is not None and total_err < stop_err:
+                return prev_weight_grads, prev_bias_grads, True
+
+            self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
+            prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
+
+        if stop_err is not None:
+            return prev_weight_grads, prev_bias_grads, False
+        else:
+            return prev_weight_grads, prev_bias_grads
+
     def train(self, train_data, learning_rate, epochs=None, stop_err=None, momentum=0.0, shuffle_samples=True):
         prev_weight_grads = None
         prev_bias_grads = None
@@ -138,41 +156,18 @@ class NeuralNetwork:
         if epochs is None and stop_err is None:
             raise ValueError("Either epochs or stop_err must be specified")
 
-        if epochs is not None:
+        if epochs is not None and stop_err is None:
             for _ in range(epochs):
-                if shuffle_samples:
-                    random.shuffle(train_data)
-
-                for sample in train_data:
-                    self.feedforward(sample[0])
-                    cost, weight_grads, bias_grads = self.backpropagation(sample[1])
-                    self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
-                    prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
-
-        if stop_err is not None:
+                weight_grads, bias_grads = self.epoch(
+                    train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
+                )
+                prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
+        else:
             while True:
-                if shuffle_samples:
-                    random.shuffle(train_data)
+                weight_grads, bias_grads, stop_err_reached = self.epoch(
+                    train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
+                )
+                if stop_err_reached:
+                    return
 
-                for sample in train_data:
-                    self.feedforward(sample[0])
-                    total_error, weight_grads, bias_grads = self.backpropagation(sample[1])
-                    if total_error < stop_err:
-                        return
-
-                    self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
-                    prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
-
-        if stop_err is not None and epochs is not None:
-            for _ in range(epochs):
-                if shuffle_samples:
-                    random.shuffle(train_data)
-
-                for sample in train_data:
-                    self.feedforward(sample[0])
-                    total_error, weight_grads, bias_grads = self.backpropagation(sample[1])
-                    if total_error > stop_err:
-                        return
-
-                    self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
-                    prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
+                prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
