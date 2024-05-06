@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import file_utils as fu
 
 
 class Neuron:
@@ -75,12 +76,15 @@ class NeuralNetwork:
 
         return values
 
-    def backpropagation(self, output):
+    def calculate_total_error(self, output_values):
         total_err = 0
         for i, neuron in enumerate(self.layers[-1]):
-            total_err += ((neuron.output - output[i]) ** 2) / 2
+            total_err += ((neuron.output - output_values[i]) ** 2) / 2
 
         total_err /= self.layers_sizes[-1]
+        return total_err
+
+    def backpropagation(self, output):
         weight_grads = []
         bias_grads = []
         weight_grad = []
@@ -112,7 +116,7 @@ class NeuralNetwork:
             grad_above = weight_gradient
             layer_above = hidden_layer
 
-        return total_err, weight_grads[::-1], bias_grads[::-1]
+        return weight_grads[::-1], bias_grads[::-1]
 
     def adjust(self, weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum):
         for i, layer in enumerate(self.layers):
@@ -135,19 +139,18 @@ class NeuralNetwork:
         if shuffle_samples:
             random.shuffle(train_data)
 
+        global_err = 0
         for sample in train_data:
             self.feedforward(sample[0])
-            total_err, weight_grads, bias_grads = self.backpropagation(sample[1])
-            if stop_err is not None and total_err < stop_err:
-                return prev_weight_grads, prev_bias_grads, True
-
+            weight_grads, bias_grads = self.backpropagation(sample[1])
+            global_err += self.calculate_total_error(sample[1])
             self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
             prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
 
         if stop_err is not None:
-            return prev_weight_grads, prev_bias_grads, False
+            return global_err, prev_weight_grads, prev_bias_grads, global_err < stop_err
         else:
-            return prev_weight_grads, prev_bias_grads
+            return global_err, prev_weight_grads, prev_bias_grads
 
     def train(self, train_data, learning_rate, epochs=None, stop_err=None, momentum=0.0, shuffle_samples=True):
         prev_weight_grads = None
@@ -156,18 +159,28 @@ class NeuralNetwork:
         if epochs is None and stop_err is None:
             raise ValueError("Either epochs or stop_err must be specified")
 
+        fu.clear_errors()
         if epochs is not None and stop_err is None:
-            for _ in range(epochs):
-                weight_grads, bias_grads = self.epoch(
+            for epoch in range(epochs):
+                global_err, weight_grads, bias_grads = self.epoch(
                     train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
                 )
+                if (epoch + 1) % 50 == 0:
+                    fu.save_error(epoch + 1, global_err)
+
                 prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
+
         else:
+            epoch = 0
             while True:
-                weight_grads, bias_grads, stop_err_reached = self.epoch(
+                global_err, weight_grads, bias_grads, stop_err_reached = self.epoch(
                     train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
                 )
+                if (epoch + 1) % 50 == 0:
+                    fu.save_error(epoch + 1, global_err)
+
                 if stop_err_reached:
                     return
 
                 prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
+                epoch += 1
