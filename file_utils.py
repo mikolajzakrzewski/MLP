@@ -2,12 +2,12 @@ import pickle
 
 
 def save_obj(obj, filename):
-    with open(filename, 'wb') as file:
+    with open(filename + '.pkl', 'wb') as file:
         pickle.dump(obj, file)
 
 
 def load_obj(filename):
-    with open(filename, 'rb') as file:
+    with open(filename + '.pkl', 'rb') as file:
         return pickle.load(file)
 
 
