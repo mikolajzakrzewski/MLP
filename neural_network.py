@@ -166,7 +166,7 @@ class NeuralNetwork:
                     train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
                 )
                 if (epoch + 1) % 50 == 0:
-                    fu.save_error(epoch + 1, global_err)
+                    fu.save_error(global_err)
 
                 prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
 
@@ -177,10 +177,12 @@ class NeuralNetwork:
                     train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
                 )
                 if (epoch + 1) % 50 == 0:
-                    fu.save_error(epoch + 1, global_err)
+                    fu.save_error(global_err)
 
                 if stop_err_reached:
                     return
 
                 prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
                 epoch += 1
+                if epoch == epochs:
+                    return

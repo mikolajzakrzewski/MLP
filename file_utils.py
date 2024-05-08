@@ -11,10 +11,9 @@ def load_obj(filename):
         return pickle.load(file)
 
 
-def save_error(epoch, total_error):
+def save_error(total_error):
     with open('global_errors.txt', 'a') as file:
-        file.write('- Epoch ' + str(epoch) + '\n')
-        file.write(' * Total error: ' + str(total_error) + '\n\n')
+        file.write(str(total_error) + '\n')
 
 
 def clear_errors():
