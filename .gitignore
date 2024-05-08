@@ -1,10 +1,10 @@
 #### Project
 
 # pickle files
-.pkl
+*.pkl
 
 # statistics files
-global_error.txt
+global_errors.txt
 
 
 ### OS X
