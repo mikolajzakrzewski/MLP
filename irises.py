@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from ucimlrepo import fetch_ucirepo
 import neural_network as nn
 import file_utils as fu
@@ -20,6 +22,19 @@ def train(neural_network):
         train_data, learning_rate=learning_rate, epochs=epochs,
         stop_err=stop_err, momentum=momentum, shuffle_samples=shuffle
     )
+    plot_errors()
+
+
+def plot_errors():
+    errors = np.loadtxt('global_errors.txt')
+    sns.set_context('paper', font_scale=1.5)
+    sns.set_style('darkgrid')
+    error_plot = sns.lineplot(
+        x=np.linspace(50, len(errors) * 50, num=len(errors)), y=errors, legend=False, color='#5D3FD3'
+    )
+    error_plot.set(xlabel='Epoch', ylabel='Error')
+    error_plot.set_title('Global Errors')
+    plt.show()
 
 
 def test(neural_network):
@@ -67,11 +82,8 @@ def test(neural_network):
         else:
             recalls.append([0])
 
-    precisions = np.array(precisions)
-    precision = np.sum(precisions) / confusion_matrix.shape[0]
-    recalls = np.array(recalls)
-    recall = np.sum(recalls) / confusion_matrix.shape[0]
-
+    precision = np.sum(np.array(precisions)) / confusion_matrix.shape[0]
+    recall = np.sum(np.array(recalls)) / confusion_matrix.shape[0]
     f_measure = (2 * precision * recall) / (precision + recall) if precision + recall != 0 else 0
 
     print('Precision: ' + str(precision))
@@ -87,7 +99,6 @@ X = iris.data.features
 y = iris.data.targets
 
 input_values = X.to_numpy()
-
 classes = list(y['class'])
 classes_outputs = {'Iris-setosa': (1, 0, 0), 'Iris-versicolor': (0, 1, 0), 'Iris-virginica': (0, 0, 1)}
 output_values = np.array([classes_outputs[i] for i in classes])
@@ -109,8 +120,6 @@ for i in range(output_values.shape[1]):
     range_end = range_start + 35
     test_inputs.append(input_values[range_start:range_end])
     test_outputs.append([tuple(row) for row in output_values[range_start:range_end]])
-
-test_data = [(test_inputs[i], test_outputs[i]) for i in range(len(test_inputs))]
 
 if str(input('- Load network from file? (Y/N): ')) == 'N':
     hidden_layers_num = int(input('Number of hidden layers: '))
