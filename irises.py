@@ -1,5 +1,6 @@
-from ucimlrepo import fetch_ucirepo
 import numpy as np
+import pandas as pd
+from ucimlrepo import fetch_ucirepo
 import neural_network as nn
 import file_utils as fu
 
@@ -22,8 +23,49 @@ def train(neural_network):
 
 
 def test(neural_network):
-    for test_input in test_inputs:
-        print(neural_network.feedforward(test_input))
+    predicted_classes = []
+    for species in range(len(test_inputs)):
+        predicted_classes.append(
+            [tuple(np.round(neural_network.feedforward(test_input))) for test_input in test_inputs[species]]
+        )
+
+    confusion_matrix = pd.DataFrame(data=np.zeros([len(classes_outputs), len(classes_outputs)]),
+                                    index=list(classes_outputs.keys()),
+                                    columns=list(classes_outputs.keys()))
+
+    output_classes = dict(zip(classes_outputs.values(), classes_outputs.keys()))
+    for species in range(len(predicted_classes)):
+        for i, predicted_class in enumerate(predicted_classes[species]):
+            confusion_matrix.loc[output_classes[test_outputs[species][i]], output_classes[predicted_class]] += 1
+
+    proper_classifications = np.array(
+        [confusion_matrix.loc[output_class, output_class] for output_class in output_classes.values()]
+    ).astype(int)
+
+    print('Total number of properly classified objects: ' + str(np.sum(proper_classifications)))
+    for i, output_class in enumerate(output_classes.values()):
+        print('Properly classified objects of class ' + str(output_class) + ': ' + str(proper_classifications[i]))
+
+    print('Confusion matrix:')
+    print(confusion_matrix)
+
+    precision = np.sum(
+        [confusion_matrix.loc[output_class, output_class] /
+         confusion_matrix[output_class].sum()
+         for output_class in output_classes.values()]
+    ) / confusion_matrix.shape[0]
+
+    recall = np.sum(
+        [confusion_matrix.loc[output_class, output_class] /
+         confusion_matrix.loc[output_class].sum()
+         for output_class in output_classes.values()]
+    ) / confusion_matrix.shape[0]
+
+    f_measure = (2 * precision * recall) / (precision + recall)
+
+    print('Precision: ' + str(precision))
+    print('Recall: ' + str(recall))
+    print('F-Measure: ' + str(f_measure))
 
 
 # fetch dataset
@@ -54,8 +96,8 @@ test_outputs = []
 for i in range(output_values.shape[1]):
     range_start = 50 * i + 15
     range_end = range_start + 35
-    test_inputs.extend(input_values[range_start:range_end])
-    test_outputs.extend(output_values[range_start:range_end])
+    test_inputs.append(input_values[range_start:range_end])
+    test_outputs.append([tuple(row) for row in output_values[range_start:range_end]])
 
 test_data = [(test_inputs[i], test_outputs[i]) for i in range(len(test_inputs))]
 
