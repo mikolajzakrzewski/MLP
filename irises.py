@@ -26,8 +26,11 @@ def test(neural_network):
     predicted_classes = []
     for species in range(len(test_inputs)):
         predicted_classes.append(
-            [tuple(np.round(neural_network.feedforward(test_input))) for test_input in test_inputs[species]]
+            np.array([neural_network.feedforward(test_input) for test_input in test_inputs[species]])
         )
+        max_values = predicted_classes[species].max(axis=1).reshape(-1, 1)
+        predicted_classes[species] = np.where(predicted_classes[species] == max_values, 1, 0)
+        predicted_classes[species] = [tuple(predicted_class) for predicted_class in predicted_classes[species]]
 
     confusion_matrix = pd.DataFrame(data=np.zeros([len(classes_outputs), len(classes_outputs)]),
                                     index=list(classes_outputs.keys()),
@@ -49,19 +52,27 @@ def test(neural_network):
     print('Confusion matrix:')
     print(confusion_matrix)
 
-    precision = np.sum(
-        [confusion_matrix.loc[output_class, output_class] /
-         confusion_matrix[output_class].sum()
-         for output_class in output_classes.values()]
-    ) / confusion_matrix.shape[0]
+    precisions = []
+    recalls = []
+    for output_class in output_classes.values():
+        if confusion_matrix[output_class].sum() != 0:
+            precisions.append([confusion_matrix.loc[output_class, output_class] /
+                               confusion_matrix[output_class].sum()])
+        else:
+            precisions.append([0])
 
-    recall = np.sum(
-        [confusion_matrix.loc[output_class, output_class] /
-         confusion_matrix.loc[output_class].sum()
-         for output_class in output_classes.values()]
-    ) / confusion_matrix.shape[0]
+        if confusion_matrix.loc[output_class].sum() != 0:
+            recalls.append([confusion_matrix.loc[output_class, output_class] /
+                            confusion_matrix.loc[output_class].sum()])
+        else:
+            recalls.append([0])
 
-    f_measure = (2 * precision * recall) / (precision + recall)
+    precisions = np.array(precisions)
+    precision = np.sum(precisions) / confusion_matrix.shape[0]
+    recalls = np.array(recalls)
+    recall = np.sum(recalls) / confusion_matrix.shape[0]
+
+    f_measure = (2 * precision * recall) / (precision + recall) if precision + recall != 0 else 0
 
     print('Precision: ' + str(precision))
     print('Recall: ' + str(recall))
