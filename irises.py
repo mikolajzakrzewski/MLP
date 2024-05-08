@@ -90,6 +90,20 @@ def test(neural_network):
     print('Recall: ' + str(recall))
     print('F-Measure: ' + str(f_measure))
 
+    plt.figure(figsize=(6, 8))
+    sns.set_context('paper', font_scale=1.5)
+    confusion_matrix_plot = sns.heatmap(
+        confusion_matrix, annot=True, square=True, cbar=False,
+        cmap='Purples', linecolor='black', linewidths=0.5, clip_on=False
+    )
+    confusion_matrix_plot.set_title('Confusion matrix')
+    confusion_matrix_plot.set_xlabel('Predicted classes\n' +
+                                     '\nPrecision: ' + str(precision) +
+                                     '\nRecall: ' + str(recall) +
+                                     '\nF-Measure: ' + str(f_measure), labelpad=10)
+    confusion_matrix_plot.set_ylabel('True classes', labelpad=10)
+    plt.show()
+
 
 # fetch dataset
 iris = fetch_ucirepo(id=53)
