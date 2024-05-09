@@ -7,7 +7,7 @@ import neural_network as nn
 import file_utils as fu
 
 
-def train(neural_network):
+def train(neural_network, train_data):
     stop_condition = input('Stop condition:\n'
                            '(1) – number of epochs\n'
                            '(2) – total error\n'
@@ -37,24 +37,24 @@ def plot_errors():
     plt.show()
 
 
-def test(neural_network):
+def test(neural_network, test_inputs, test_outputs, classes_outputs):
     predicted_classes = []
-    for species in range(len(test_inputs)):
+    for i in range(len(test_inputs)):
         predicted_classes.append(
-            np.array([neural_network.feedforward(test_input) for test_input in test_inputs[species]])
+            np.array([neural_network.feedforward(test_input) for test_input in test_inputs[i]])
         )
-        max_values = predicted_classes[species].max(axis=1).reshape(-1, 1)
-        predicted_classes[species] = np.where(predicted_classes[species] == max_values, 1, 0)
-        predicted_classes[species] = [tuple(predicted_class) for predicted_class in predicted_classes[species]]
+        max_values = predicted_classes[i].max(axis=1).reshape(-1, 1)
+        predicted_classes[i] = np.where(predicted_classes[i] == max_values, 1, 0)
+        predicted_classes[i] = [tuple(predicted_class) for predicted_class in predicted_classes[i]]
 
     confusion_matrix = pd.DataFrame(data=np.zeros([len(classes_outputs), len(classes_outputs)]),
                                     index=list(classes_outputs.keys()),
                                     columns=list(classes_outputs.keys()))
 
     output_classes = dict(zip(classes_outputs.values(), classes_outputs.keys()))
-    for species in range(len(predicted_classes)):
-        for i, predicted_class in enumerate(predicted_classes[species]):
-            confusion_matrix.loc[output_classes[test_outputs[species][i]], output_classes[predicted_class]] += 1
+    for i in range(len(predicted_classes)):
+        for j, predicted_class in enumerate(predicted_classes[i]):
+            confusion_matrix.loc[output_classes[test_outputs[i][j]], output_classes[predicted_class]] += 1
 
     proper_classifications = np.array(
         [confusion_matrix.loc[output_class, output_class] for output_class in output_classes.values()]
@@ -113,27 +113,27 @@ X = iris.data.features
 y = iris.data.targets
 
 input_values = X.to_numpy()
-classes = list(y['class'])
-classes_outputs = {'Iris-setosa': (1, 0, 0), 'Iris-versicolor': (0, 1, 0), 'Iris-virginica': (0, 0, 1)}
-output_values = np.array([classes_outputs[i] for i in classes])
+iris_classes = list(y['class'])
+iris_classes_outputs = {'Iris-setosa': (1, 0, 0), 'Iris-versicolor': (0, 1, 0), 'Iris-virginica': (0, 0, 1)}
+iris_output_values = np.array([iris_classes_outputs[i] for i in iris_classes])
 
-train_inputs = []
-train_outputs = []
-for i in range(output_values.shape[1]):
+iris_train_inputs = []
+iris_train_outputs = []
+for i in range(iris_output_values.shape[1]):
     range_start = 50 * i
     range_end = range_start + 15
-    train_inputs.extend(input_values[range_start:range_end])
-    train_outputs.extend(output_values[range_start:range_end])
+    iris_train_inputs.extend(input_values[range_start:range_end])
+    iris_train_outputs.extend(iris_output_values[range_start:range_end])
 
-train_data = [(train_inputs[i], train_outputs[i]) for i in range(len(train_inputs))]
+iris_train_data = [(iris_train_inputs[i], iris_train_outputs[i]) for i in range(len(iris_train_inputs))]
 
-test_inputs = []
-test_outputs = []
-for i in range(output_values.shape[1]):
+iris_test_inputs = []
+iris_test_outputs = []
+for i in range(iris_output_values.shape[1]):
     range_start = 50 * i + 15
     range_end = range_start + 35
-    test_inputs.append(input_values[range_start:range_end])
-    test_outputs.append([tuple(row) for row in output_values[range_start:range_end]])
+    iris_test_inputs.append(input_values[range_start:range_end])
+    iris_test_outputs.append([tuple(row) for row in iris_output_values[range_start:range_end]])
 
 if str(input('- Load network from file? (Y/N): ')) == 'N':
     hidden_layers_num = int(input('Number of hidden layers: '))
@@ -143,7 +143,7 @@ if str(input('- Load network from file? (Y/N): ')) == 'N':
 
     include_bias = True if str(input('- Include bias? (Y/N): ')) == 'Y' else False
     mlp = nn.NeuralNetwork(
-        input_values.shape[1], hidden_layers_num, hidden_layers_sizes, output_values.shape[1], include_bias
+        input_values.shape[1], hidden_layers_num, hidden_layers_sizes, iris_output_values.shape[1], include_bias
     )
 else:
     mlp = fu.load_obj(str(input('   * Enter file name: ')))
@@ -151,9 +151,9 @@ else:
 while True:
     choice = input('What to do with the network:\n(1) – train\n(2) – test\n(3) – exit\n')
     if choice == '1':
-        train(mlp)
+        train(mlp, iris_train_data)
     elif choice == '2':
-        test(mlp)
+        test(mlp, iris_test_inputs, iris_test_outputs, iris_classes_outputs)
     elif choice == '3':
         break
     else:
