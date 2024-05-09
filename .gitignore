@@ -1,10 +1,10 @@
 #### Project
 
-# pickle files
-*.pkl
+# serialized objects
+saved_networks/
 
 # statistics files
-global_errors.txt
+stats/
 
 
 ### OS X

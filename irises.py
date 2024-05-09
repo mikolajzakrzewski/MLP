@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from ucimlrepo import fetch_ucirepo
+import os.path
 import neural_network as nn
 import file_utils as fu
 
@@ -23,17 +24,30 @@ def train(neural_network, train_data):
         stop_err=stop_err, momentum=momentum, shuffle_samples=shuffle
     )
     plot_errors()
+    plot_accuracies()
 
 
 def plot_errors():
-    errors = np.loadtxt('global_errors.txt')
+    errors = np.loadtxt(os.path.join('stats/', 'training_errors.txt'))
     sns.set_context('paper', font_scale=1.5)
     sns.set_style('darkgrid')
     error_plot = sns.lineplot(
-        x=np.linspace(10, len(errors) * 10, num=len(errors)), y=errors, legend=False, color='#5D3FD3'
+        errors, legend=False, color='#5D3FD3'
     )
     error_plot.set(xlabel='Epoch', ylabel='Error')
-    error_plot.set_title('Global Errors')
+    error_plot.set_title('Training errors')
+    plt.show()
+
+
+def plot_accuracies():
+    accuracies = np.loadtxt(os.path.join('stats/', 'training_accuracies.txt'))
+    sns.set_context('paper', font_scale=1.5)
+    sns.set_style('darkgrid')
+    error_plot = sns.lineplot(
+        accuracies, legend=False, color='#5D3FD3'
+    )
+    error_plot.set(xlabel='Epoch', ylabel='Accuracy')
+    error_plot.set_title('Training accuracy')
     plt.show()
 
 

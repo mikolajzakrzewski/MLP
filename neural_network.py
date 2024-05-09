@@ -74,7 +74,7 @@ class NeuralNetwork:
 
             values = [neuron.output for neuron in layer]
 
-        return values
+        return np.array(values)
 
     def calculate_total_error(self, output_values):
         total_err = 0
@@ -138,12 +138,19 @@ class NeuralNetwork:
             random.shuffle(train_data)
 
         global_err = 0
-        for sample in train_data:
-            self.feedforward(sample[0])
+        correct_predictions = 0
+        for i, sample in enumerate(train_data):
+            result = self.feedforward(sample[0])
+            if result.argmax() == np.array(sample[1]).argmax():
+                correct_predictions += 1
+
             weight_grads, bias_grads = self.backpropagation(sample[1])
             global_err += self.calculate_total_error(sample[1])
             self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
             prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
+
+        accuracy = correct_predictions / len(train_data)
+        fu.save_accuracy(accuracy)
 
         if stop_err is not None:
             return global_err, prev_weight_grads, prev_bias_grads, global_err < stop_err
@@ -158,14 +165,13 @@ class NeuralNetwork:
             raise ValueError("Either epochs or stop_err must be specified")
 
         fu.clear_errors()
+        fu.clear_accuracies()
         if epochs is not None and stop_err is None:
             for epoch in range(epochs):
                 global_err, weight_grads, bias_grads = self.epoch(
                     train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
                 )
-                if (epoch + 1) % 10 == 0:
-                    fu.save_error(global_err)
-
+                fu.save_error(global_err)
                 prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
 
         else:
@@ -174,9 +180,7 @@ class NeuralNetwork:
                 global_err, weight_grads, bias_grads, stop_err_reached = self.epoch(
                     train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
                 )
-                if (epoch + 1) % 10 == 0:
-                    fu.save_error(global_err)
-
+                fu.save_error(global_err)
                 if stop_err_reached:
                     return
 
