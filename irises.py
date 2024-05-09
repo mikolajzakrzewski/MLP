@@ -30,7 +30,7 @@ def plot_errors():
     sns.set_context('paper', font_scale=1.5)
     sns.set_style('darkgrid')
     error_plot = sns.lineplot(
-        x=np.linspace(50, len(errors) * 50, num=len(errors)), y=errors, legend=False, color='#5D3FD3'
+        x=np.linspace(10, len(errors) * 10, num=len(errors)), y=errors, legend=False, color='#5D3FD3'
     )
     error_plot.set(xlabel='Epoch', ylabel='Error')
     error_plot.set_title('Global Errors')

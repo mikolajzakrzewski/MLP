@@ -7,7 +7,7 @@ class Neuron:
     def __init__(self, input_size, input_values=None, weights=None, include_bias=True):
         self.input_values = input_values
         if weights is None:
-            self.weights = 0.5 * np.random.randn(input_size)
+            self.weights = np.array(0.5 * np.random.randn(input_size))
         else:
             self.weights = weights
 
@@ -87,33 +87,31 @@ class NeuralNetwork:
     def backpropagation(self, output):
         weight_grads = []
         bias_grads = []
-        weight_grad = []
-        bias_grad = []
-        for i, neuron in enumerate(self.layers[-1]):
-            error_signal = (neuron.output - output[i]) * neuron.calculate_output_derivative()
-            bias_grad.append(error_signal)
-            errors = error_signal * neuron.input_values
-            weight_grad.append(errors)
-
-        weight_grads.append(weight_grad)
-        bias_grads.append(bias_grad)
-        grad_above = weight_grad
+        error_signals = np.array([
+            (neuron.output - output[i]) * neuron.calculate_output_derivative()
+            for i, neuron in enumerate(self.layers[-1])
+        ])
+        errors = np.array([
+            error_signals[i] * neuron.input_values
+            for i, neuron in enumerate(self.layers[-1])
+        ])
+        weight_grads.append(errors)
+        bias_grads.append(error_signals)
+        grad_above = errors
         layer_above = self.layers[-1]
         for hidden_layer in reversed(self.layers[:-1]):
-            weight_gradient = []
-            bias_gradient = []
             layer_above_weights = np.array([neuron.weights for neuron in layer_above])
-            for i, neuron in enumerate(hidden_layer):
-                neuron_weights = [weight[i] for weight in layer_above_weights]
-                neuron_errors = [error[i] for error in grad_above]
-                error_signal = np.dot(neuron_weights, neuron_errors) * neuron.calculate_output_derivative()
-                bias_gradient.append(error_signal)
-                errors = error_signal * neuron.input_values
-                weight_gradient.append(errors)
-
-            weight_grads.append(weight_gradient)
-            bias_grads.append(bias_gradient)
-            grad_above = weight_gradient
+            error_signals = np.array([
+                np.dot(layer_above_weights[:, i], grad_above[:, i]) * neuron.calculate_output_derivative()
+                for i, neuron in enumerate(hidden_layer)
+            ])
+            errors = np.array([
+                error_signals[i] * neuron.input_values
+                for i, neuron in enumerate(hidden_layer)
+            ])
+            weight_grads.append(errors)
+            bias_grads.append(error_signals)
+            grad_above = errors
             layer_above = hidden_layer
 
         return weight_grads[::-1], bias_grads[::-1]
@@ -165,7 +163,7 @@ class NeuralNetwork:
                 global_err, weight_grads, bias_grads = self.epoch(
                     train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
                 )
-                if (epoch + 1) % 50 == 0:
+                if (epoch + 1) % 10 == 0:
                     fu.save_error(global_err)
 
                 prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
@@ -176,7 +174,7 @@ class NeuralNetwork:
                 global_err, weight_grads, bias_grads, stop_err_reached = self.epoch(
                     train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
                 )
-                if (epoch + 1) % 50 == 0:
+                if (epoch + 1) % 10 == 0:
                     fu.save_error(global_err)
 
                 if stop_err_reached:
