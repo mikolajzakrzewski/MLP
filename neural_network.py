@@ -133,31 +133,50 @@ class NeuralNetwork:
             for j, neuron in enumerate(layer):
                 neuron.update(input_values=None, weights=weights[j], bias=biases[j])
 
-    def epoch(self, train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples):
+    def epoch(self, train_data, valid_data, prev_weight_grads, prev_bias_grads,
+              learning_rate, stop_err, momentum, shuffle_samples, save_values):
         if shuffle_samples:
             random.shuffle(train_data)
 
-        global_err = 0
-        correct_predictions = 0
+        train_error = 0
+        correct_train_predictions = 0
         for i, sample in enumerate(train_data):
             result = self.feedforward(sample[0])
             if result.argmax() == np.array(sample[1]).argmax():
-                correct_predictions += 1
+                correct_train_predictions += 1
 
             weight_grads, bias_grads = self.backpropagation(sample[1])
-            global_err += self.calculate_total_error(sample[1])
+            train_error += self.calculate_total_error(sample[1])
             self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
             prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
 
-        accuracy = correct_predictions / len(train_data)
-        fu.save_accuracy(accuracy)
+        if save_values:
+            train_accuracy = correct_train_predictions / len(train_data)
+            fu.save_training_accuracy(train_accuracy)
+            fu.save_training_error(train_error)
+
+        if valid_data is not None:
+            valid_error = 0
+            correct_valid_predictions = 0
+            for i, sample in enumerate(valid_data):
+                result = self.feedforward(sample[0])
+                if result.argmax() == np.array(sample[1]).argmax():
+                    correct_valid_predictions += 1
+
+                valid_error += self.calculate_total_error(sample[1])
+
+            if save_values:
+                valid_accuracy = correct_valid_predictions / len(valid_data)
+                fu.save_validation_accuracy(valid_accuracy)
+                fu.save_validation_error(valid_error)
 
         if stop_err is not None:
-            return global_err, prev_weight_grads, prev_bias_grads, global_err < stop_err
+            return prev_weight_grads, prev_bias_grads, train_error < stop_err
         else:
-            return global_err, prev_weight_grads, prev_bias_grads
+            return prev_weight_grads, prev_bias_grads
 
-    def train(self, train_data, learning_rate, epochs=None, stop_err=None, momentum=0.0, shuffle_samples=True):
+    def train(self, learning_rate, train_data, valid_data=None,
+              epochs=None, stop_err=None, momentum=0.0, shuffle_samples=True):
         prev_weight_grads = None
         prev_bias_grads = None
 
@@ -168,23 +187,34 @@ class NeuralNetwork:
         fu.clear_accuracies()
         if epochs is not None and stop_err is None:
             for epoch in range(epochs):
-                global_err, weight_grads, bias_grads = self.epoch(
-                    train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
+                if (epoch + 1) % 10 == 0:
+                    save_values = True
+                else:
+                    save_values = False
+
+                weight_grads, bias_grads = self.epoch(
+                    train_data, valid_data, prev_weight_grads, prev_bias_grads,
+                    learning_rate, stop_err, momentum, shuffle_samples, save_values
                 )
-                fu.save_error(global_err)
                 prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
 
         else:
-            epoch = 0
+            epoch = 1
             while True:
-                global_err, weight_grads, bias_grads, stop_err_reached = self.epoch(
-                    train_data, prev_weight_grads, prev_bias_grads, learning_rate, stop_err, momentum, shuffle_samples
+                if epoch == epochs:
+                    return
+
+                if epoch % 10 == 0:
+                    save_values = True
+                else:
+                    save_values = False
+
+                weight_grads, bias_grads, stop_err_reached = self.epoch(
+                    train_data, valid_data, prev_weight_grads, prev_bias_grads,
+                    learning_rate, stop_err, momentum, shuffle_samples, save_values
                 )
-                fu.save_error(global_err)
                 if stop_err_reached:
                     return
 
                 prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
                 epoch += 1
-                if epoch == epochs:
-                    return

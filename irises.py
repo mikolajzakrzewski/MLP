@@ -3,12 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from ucimlrepo import fetch_ucirepo
-import os.path
 import neural_network as nn
 import file_utils as fu
+import plotting as pl
 
 
-def train(neural_network, train_data):
+def train(neural_network, train_data, valid_data):
     stop_condition = input('Stop condition:\n'
                            '(1) – number of epochs\n'
                            '(2) – total error\n'
@@ -20,35 +20,10 @@ def train(neural_network, train_data):
     momentum = float(input('  * Momentum: ')) if str(input('- Include momentum? (Y/N): ')) == 'Y' else 0.0
     shuffle = True if str(input('- Shuffle training data? (Y/N): ')) == 'Y' else False
     neural_network.train(
-        train_data, learning_rate=learning_rate, epochs=epochs,
-        stop_err=stop_err, momentum=momentum, shuffle_samples=shuffle
+        learning_rate, train_data, valid_data, epochs, stop_err, momentum, shuffle
     )
-    plot_errors()
-    plot_accuracies()
-
-
-def plot_errors():
-    errors = np.loadtxt(os.path.join('stats/', 'training_errors.txt'))
-    sns.set_context('paper', font_scale=1.5)
-    sns.set_style('darkgrid')
-    error_plot = sns.lineplot(
-        errors, legend=False, color='#5D3FD3'
-    )
-    error_plot.set(xlabel='Epoch', ylabel='Error')
-    error_plot.set_title('Training errors')
-    plt.show()
-
-
-def plot_accuracies():
-    accuracies = np.loadtxt(os.path.join('stats/', 'training_accuracies.txt'))
-    sns.set_context('paper', font_scale=1.5)
-    sns.set_style('darkgrid')
-    error_plot = sns.lineplot(
-        accuracies, legend=False, color='#5D3FD3'
-    )
-    error_plot.set(xlabel='Epoch', ylabel='Accuracy')
-    error_plot.set_title('Training accuracy')
-    plt.show()
+    pl.plot_errors()
+    pl.plot_accuracies()
 
 
 def test(neural_network, test_inputs, test_outputs, classes_outputs):
@@ -133,13 +108,18 @@ iris_output_values = np.array([iris_classes_outputs[i] for i in iris_classes])
 
 iris_train_inputs = []
 iris_train_outputs = []
+iris_valid_inputs = []
+iris_valid_outputs = []
 for i in range(iris_output_values.shape[1]):
     range_start = 50 * i
     range_end = range_start + 15
-    iris_train_inputs.extend(input_values[range_start:range_end])
-    iris_train_outputs.extend(iris_output_values[range_start:range_end])
+    iris_train_inputs.extend(input_values[range_start:range_end - 5])
+    iris_train_outputs.extend(iris_output_values[range_start:range_end - 5])
+    iris_valid_inputs.extend(input_values[range_end - 5:range_end])
+    iris_valid_outputs.extend(iris_output_values[range_end - 5:range_end])
 
 iris_train_data = [(iris_train_inputs[i], iris_train_outputs[i]) for i in range(len(iris_train_inputs))]
+iris_valid_data = [(iris_valid_inputs[i], iris_valid_outputs[i]) for i in range(len(iris_valid_inputs))]
 
 iris_test_inputs = []
 iris_test_outputs = []
@@ -165,7 +145,7 @@ else:
 while True:
     choice = input('What to do with the network:\n(1) – train\n(2) – test\n(3) – exit\n')
     if choice == '1':
-        train(mlp, iris_train_data)
+        train(mlp, iris_train_data, iris_valid_data)
     elif choice == '2':
         test(mlp, iris_test_inputs, iris_test_outputs, iris_classes_outputs)
     elif choice == '3':

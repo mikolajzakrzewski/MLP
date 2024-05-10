@@ -15,11 +15,19 @@ def load_obj(filename):
         return pickle.load(file)
 
 
-def save_error(total_error):
+def save_training_error(total_error):
     if not os.path.exists('stats/'):
         os.makedirs('stats/')
 
     with open(os.path.join('stats/', 'training_errors.txt'), 'a') as file:
+        file.write(str(total_error) + '\n')
+
+
+def save_validation_error(total_error):
+    if not os.path.exists('stats/'):
+        os.makedirs('stats/')
+
+    with open(os.path.join('stats/', 'validation_errors.txt'), 'a') as file:
         file.write(str(total_error) + '\n')
 
 
@@ -30,12 +38,23 @@ def clear_errors():
     with open(os.path.join('stats/', 'training_errors.txt'), 'w'):
         pass
 
+    with open(os.path.join('stats/', 'validation_errors.txt'), 'w'):
+        pass
 
-def save_accuracy(accuracy):
+
+def save_training_accuracy(accuracy):
     if not os.path.exists('stats/'):
         os.makedirs('stats/')
 
     with open(os.path.join('stats/', 'training_accuracies.txt'), 'a') as file:
+        file.write(str(accuracy) + '\n')
+
+
+def save_validation_accuracy(accuracy):
+    if not os.path.exists('stats/'):
+        os.makedirs('stats/')
+
+    with open(os.path.join('stats/', 'validation_accuracies.txt'), 'a') as file:
         file.write(str(accuracy) + '\n')
 
 
@@ -44,4 +63,7 @@ def clear_accuracies():
         os.makedirs('stats/')
 
     with open(os.path.join('stats/', 'training_accuracies.txt'), 'w'):
+        pass
+
+    with open(os.path.join('stats/', 'validation_accuracies.txt'), 'w'):
         pass
