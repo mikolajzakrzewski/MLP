@@ -20,8 +20,8 @@ def train(neural_network, train_data, valid_data):
     neural_network.train(
         learning_rate, train_data, valid_data, epochs, stop_err, momentum, shuffle
     )
-    pl.plot_errors()
-    pl.plot_accuracies()
+    pl.plot_errors(filename='iris_errors.png')
+    pl.plot_accuracies(filename='iris_accuracies.png')
 
 
 def test(neural_network, test_inputs, test_outputs, classes_outputs):
@@ -77,7 +77,7 @@ def test(neural_network, test_inputs, test_outputs, classes_outputs):
     print('Recall: ' + str(recall))
     print('F-Measure: ' + str(f_measure))
 
-    pl.plot_confusion_matrix(confusion_matrix, precision, recall, f_measure)
+    pl.plot_confusion_matrix(confusion_matrix, precision, recall, f_measure, filename='iris_confusion_matrix.png')
 
 
 # fetch dataset
@@ -98,7 +98,7 @@ iris_valid_inputs = []
 iris_valid_outputs = []
 for i in range(iris_output_values.shape[1]):
     range_start = 50 * i
-    range_end = range_start + 15
+    range_end = range_start + 20
     iris_train_inputs.extend(input_values[range_start:range_end - 5])
     iris_train_outputs.extend(iris_output_values[range_start:range_end - 5])
     iris_valid_inputs.extend(input_values[range_end - 5:range_end])
@@ -110,8 +110,8 @@ iris_valid_data = [(iris_valid_inputs[i], iris_valid_outputs[i]) for i in range(
 iris_test_inputs = []
 iris_test_outputs = []
 for i in range(iris_output_values.shape[1]):
-    range_start = 50 * i + 15
-    range_end = range_start + 35
+    range_start = 50 * i + 20
+    range_end = range_start + 30
     iris_test_inputs.append(input_values[range_start:range_end])
     iris_test_outputs.append([tuple(row) for row in iris_output_values[range_start:range_end]])
 
