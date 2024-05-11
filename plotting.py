@@ -12,7 +12,8 @@ def plot_errors(validation=True, filename=None):
         errors = pd.DataFrame(np.column_stack((train_errors, valid_errors)),
                               columns=['Training errors', 'Validation errors'])
     else:
-        errors = pd.DataFrame(train_errors, columns=['Training error'], index=[i * 10 for i in range(len(train_errors))])
+        errors = pd.DataFrame(train_errors, columns=['Training error'],
+                              index=[i * 10 for i in range(len(train_errors))])
 
     plt.figure(figsize=(8, 8))
     sns.set_context('paper', font_scale=1.5)
@@ -42,7 +43,8 @@ def plot_accuracies(validation=True, filename=None):
         accuracies = pd.DataFrame(np.column_stack((train_accuracies, valid_accuracies)),
                                   columns=['Training accuracy', 'Validation accuracy'])
     else:
-        accuracies = pd.DataFrame(train_accuracies, columns=['Training accuracy'], index=[i * 10 for i in range(len(train_accuracies))])
+        accuracies = pd.DataFrame(train_accuracies, columns=['Training accuracy'],
+                                  index=[i * 10 for i in range(len(train_accuracies))])
 
     plt.figure(figsize=(8, 8))
     sns.set_context('paper', font_scale=1.5)
