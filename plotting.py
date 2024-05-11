@@ -10,7 +10,8 @@ def plot_errors(validation=True, filename=None):
     if validation:
         valid_errors = np.loadtxt(os.path.join('stats/', 'validation_errors.txt'))
         errors = pd.DataFrame(np.column_stack((train_errors, valid_errors)),
-                              columns=['Training errors', 'Validation errors'])
+                              columns=['Training errors', 'Validation errors'],
+                              index=[(i + 1) * 10 for i in range(len(train_errors))])
     else:
         errors = pd.DataFrame(train_errors, columns=['Training error'],
                               index=[(i + 1) * 10 for i in range(len(train_errors))])
@@ -41,7 +42,8 @@ def plot_accuracies(validation=True, filename=None):
     if validation:
         valid_accuracies = np.loadtxt(os.path.join('stats/', 'validation_accuracies.txt'))
         accuracies = pd.DataFrame(np.column_stack((train_accuracies, valid_accuracies)),
-                                  columns=['Training accuracy', 'Validation accuracy'])
+                                  columns=['Training accuracy', 'Validation accuracy'],
+                                  index=[(i + 1) * 10 for i in range(len(train_accuracies))])
     else:
         accuracies = pd.DataFrame(train_accuracies, columns=['Training accuracy'],
                                   index=[(i + 1) * 10 for i in range(len(train_accuracies))])
