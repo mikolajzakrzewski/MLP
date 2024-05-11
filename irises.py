@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from ucimlrepo import fetch_ucirepo
 import neural_network as nn
 import file_utils as fu
@@ -79,19 +77,7 @@ def test(neural_network, test_inputs, test_outputs, classes_outputs):
     print('Recall: ' + str(recall))
     print('F-Measure: ' + str(f_measure))
 
-    plt.figure(figsize=(6, 8))
-    sns.set_context('paper', font_scale=1.5)
-    confusion_matrix_plot = sns.heatmap(
-        confusion_matrix, annot=True, square=True, cbar=False,
-        cmap='Purples', linecolor='black', linewidths=0.5, clip_on=False
-    )
-    confusion_matrix_plot.set_title('Confusion matrix')
-    confusion_matrix_plot.set_xlabel('Predicted classes\n' +
-                                     '\nPrecision: ' + str(precision) +
-                                     '\nRecall: ' + str(recall) +
-                                     '\nF-Measure: ' + str(f_measure), labelpad=10)
-    confusion_matrix_plot.set_ylabel('True classes', labelpad=10)
-    plt.show()
+    pl.plot_confusion_matrix(confusion_matrix, precision, recall, f_measure)
 
 
 # fetch dataset

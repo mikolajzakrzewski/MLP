@@ -6,6 +6,9 @@ saved_networks/
 # statistics files
 stats/
 
+# plots
+plots/
+
 
 ### OS X
 
