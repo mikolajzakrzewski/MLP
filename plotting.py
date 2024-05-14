@@ -22,6 +22,7 @@ def plot_errors(validation=True, filename=None):
     error_plot = sns.lineplot(
         errors, palette='viridis'
     )
+    error_plot.set(ylim=(-0.1, None))
     error_plot.set(xlabel='Epoch', ylabel='Error')
     if validation:
         error_plot.set_title('Training/validation data errors during training')
@@ -29,10 +30,10 @@ def plot_errors(validation=True, filename=None):
         error_plot.set_title('Training data errors during training')
 
     if filename is not None:
-        if not os.path.exists('plots/errors'):
-            os.makedirs('plots/errors')
+        if not os.path.exists('plots/'):
+            os.makedirs('plots/')
 
-        plt.savefig(os.path.join('plots/errors/', filename))
+        plt.savefig(os.path.join('plots/', filename))
 
     plt.show()
 
@@ -51,20 +52,21 @@ def plot_accuracies(validation=True, filename=None):
     plt.figure(figsize=(8, 8))
     sns.set_context('paper', font_scale=1.5)
     sns.set_style('darkgrid')
-    error_plot = sns.lineplot(
+    accuracy_plot = sns.lineplot(
         accuracies, palette='viridis'
     )
-    error_plot.set(xlabel='Epoch', ylabel='Accuracy')
+    accuracy_plot.set(ylim=(-0.1, 1.1))
+    accuracy_plot.set(xlabel='Epoch', ylabel='Accuracy')
     if validation:
-        error_plot.set_title('Training/validation data accuracy during training')
+        accuracy_plot.set_title('Training/validation data accuracy during training')
     else:
-        error_plot.set_title('Training data accuracy during training')
+        accuracy_plot.set_title('Training data accuracy during training')
 
     if filename is not None:
-        if not os.path.exists('plots/accuracies'):
-            os.makedirs('plots/accuracies')
+        if not os.path.exists('plots/'):
+            os.makedirs('plots/')
 
-        plt.savefig(os.path.join('plots/accuracies/', filename))
+        plt.savefig(os.path.join('plots/', filename))
 
     plt.show()
 
