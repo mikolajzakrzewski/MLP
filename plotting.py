@@ -6,7 +6,13 @@ import seaborn as sns
 
 
 def plot_errors(validation=True, filename=None):
-    train_errors = np.loadtxt(os.path.join('stats/', 'training_errors.txt'))
+    if os.stat(os.path.join('stats/', 'training_errors.txt')).st_size == 0:
+        return
+
+    train_errors = np.loadtxt(os.path.join('stats/', 'training_errors.txt'), ndmin=1)
+    if train_errors.shape[0] == 1:
+        return
+
     if validation:
         valid_errors = np.loadtxt(os.path.join('stats/', 'validation_errors.txt'))
         errors = pd.DataFrame(np.column_stack((train_errors, valid_errors)),
@@ -39,7 +45,13 @@ def plot_errors(validation=True, filename=None):
 
 
 def plot_accuracies(validation=True, filename=None):
-    train_accuracies = np.loadtxt(os.path.join('stats/', 'training_accuracies.txt'))
+    if os.stat(os.path.join('stats/', 'training_accuracies.txt')).st_size == 0:
+        return
+
+    train_accuracies = np.loadtxt(os.path.join('stats/', 'training_accuracies.txt'), ndmin=1)
+    if train_accuracies.shape[0] == 1:
+        return
+
     if validation:
         valid_accuracies = np.loadtxt(os.path.join('stats/', 'validation_accuracies.txt'))
         accuracies = pd.DataFrame(np.column_stack((train_accuracies, valid_accuracies)),
