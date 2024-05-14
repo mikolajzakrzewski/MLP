@@ -93,9 +93,13 @@ def test(neural_network, test_inputs, test_outputs, output_values=None):
 
         pl.plot_confusion_matrix(confusion_matrix, precision, recall, f_measure, filename='confusion_matrix.png')
 
-    for test_input_group in test_inputs:
-        for test_input in test_input_group:
-            mlp.feedforward(test_input)
+    fu.clear_outputs()
+    for i, test_input_group in enumerate(test_inputs):
+        for j, test_input in enumerate(test_input_group):
+            output = mlp.feedforward(test_input)
+            output_formatted = [round(i, 2) for i in output]
+            expected_output = test_outputs[i][j]
+            fu.save_outputs(output_formatted, expected_output)
 
 
 if __name__ == '__main__':
