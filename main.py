@@ -4,34 +4,40 @@ from ucimlrepo import fetch_ucirepo
 import neural_network as nn
 import file_utils as fu
 import plotting as pl
+import input_handling as ih
 
 
 def create_network(input_size, output_size):
-    hidden_layers_num = int(input('Number of hidden layers: '))
+    hidden_layers_num = ih.get_verified_int_input('Number of hidden layers: ', True)
     hidden_layers_sizes = []
     for i in range(hidden_layers_num):
-        hidden_layers_sizes.append(int(input('  * ' + str(i + 1) + ' hidden layer size: ')))
+        hidden_layers_sizes.append(ih.get_verified_int_input('  * ' + str(i + 1) + ' hidden layer size: ', True))
 
-    include_bias = True if str(input('- Include bias? (Y/N): ')) == 'Y' else False
+    include_bias = ih.get_confirmation('- Include bias?')
     return nn.NeuralNetwork(
         input_size, hidden_layers_num, hidden_layers_sizes, output_size, include_bias
     )
 
 
 def train(neural_network, train_data, valid_data=None):
-    stop_condition = input('Stop condition:\n'
-                           '(1) – number of epochs\n'
-                           '(2) – total error\n'
-                           '(3) – both\n')
+    stop_condition = ih.get_verified_input('Stop condition:\n'
+                                           '(1) – number of epochs\n'
+                                           '(2) – total error\n'
+                                           '(3) – both\n', ['1', '2', '3'])
 
-    epochs = int(input('  * Number of epochs: ')) if stop_condition == '1' or stop_condition == '3' else None
-    stop_err = float(input('  * Total error: ')) if stop_condition == '2' or stop_condition == '3' else None
-    learning_rate = float(input('  * Learning rate: '))
-    momentum = float(input('  * Momentum: ')) if str(input('- Include momentum? (Y/N): ')) == 'Y' else 0.0
-    shuffle = True if str(input('- Shuffle training data? (Y/N): ')) == 'Y' else False
+    epochs = ih.get_verified_int_input(
+        '  * Number of epochs: ', True) if stop_condition == '1' or stop_condition == '3' else None
+    stop_err = ih.get_verified_float_input(
+        '  * Total error: ', True) if stop_condition == '2' or stop_condition == '3' else None
+    learning_rate = ih.get_verified_float_input('  * Learning rate: ', True)
+    momentum = ih.get_verified_float_input('  * Momentum: ', True) if ih.get_confirmation(
+        '- Include momentum?') else 0.0
+    shuffle = ih.get_confirmation('- Shuffle training data?')
+    print(' <Training in progress>')
     neural_network.train(
         learning_rate, train_data, valid_data, epochs, stop_err, momentum, shuffle
     )
+    print(' <Training complete>')
     validation = True if valid_data is not None else False
     pl.plot_errors(filename='errors.png', validation=validation)
     pl.plot_accuracies(filename='accuracies.png', validation=validation)
@@ -101,6 +107,8 @@ def test(neural_network, test_inputs, test_outputs, output_values=None):
             expected_output = test_outputs[i][j]
             fu.save_outputs(output_formatted, expected_output)
 
+    print(' <Testing statistics saved to files>')
+
 
 if __name__ == '__main__':
     training_data = None
@@ -108,7 +116,8 @@ if __name__ == '__main__':
     test_data_inputs = None
     test_data_outputs = None
     classes_outputs = None
-    task_choice = str(input('Choose a task:\n(1) – iris dataset classification\n(2) – autoencoder\n'))
+    task_choice = ih.get_verified_input('Choose a task:\n(1) – iris dataset classification\n(2) – autoencoder\n',
+                                        ['1', '2'])
     if task_choice == '1':
         # fetch dataset
         iris = fetch_ucirepo(id=53)
@@ -145,28 +154,31 @@ if __name__ == '__main__':
             test_data_inputs.append(input_values[range_start:range_end])
             test_data_outputs.append([tuple(row) for row in iris_output_values[range_start:range_end]])
 
-    elif task_choice == '2':
+    else:
         test_data_inputs = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
         test_data_outputs = test_data_inputs
         training_data = [(values, values) for values in test_data_inputs]
         test_data_inputs = [test_data_inputs]
         test_data_outputs = [test_data_outputs]
 
-    if str(input('- Load network from file? (Y/N): ')) == 'N':
-        mlp = create_network(len(training_data[0][0]), len(training_data[0][1]))
+    choice = ih.get_confirmation('- Load network from file?')
+    if choice:
+        mlp = fu.load_obj(ih.get_verified_string_input('   * Enter file name: '))
+        print(' <Loaded network from file>')
     else:
-        mlp = fu.load_obj(str(input('   * Enter file name: ')))
+        mlp = create_network(len(training_data[0][0]), len(training_data[0][1]))
 
     while True:
-        choice = input('What to do with the network:\n(1) – train\n(2) – test\n(3) – exit\n')
+        choice = ih.get_verified_input('What to do with the network:\n(1) – train\n(2) – test\n(3) – exit\n',
+                                       ['1', '2', '3'])
         if choice == '1':
             train(mlp, training_data, validation_data)
         elif choice == '2':
             test(mlp, test_data_inputs, test_data_outputs, classes_outputs)
-        elif choice == '3':
-            break
         else:
-            print(' ! Invalid choice !')
+            break
 
-    if str(input('- Save network to file? (Y/N): ')) == 'Y':
-        fu.save_obj(mlp, str(input('   * Enter file name: ')))
+    confirmation = ih.get_confirmation('- Save network to file?')
+    if confirmation:
+        fu.save_obj(mlp, ih.get_verified_string_input('   * Enter file name: '))
+        print(' <Saved network to file>')
