@@ -1,6 +1,7 @@
 import copy
 import neural_network as nn
 import plotting as pl
+import input_handling as ih
 
 
 def examine_shuffling(train_data):
@@ -51,15 +52,13 @@ if __name__ == '__main__':
     ]
 
     while True:
-        choice = input('What to do with the network:\n'
-                       '(1) – examine shuffling training data\n'
-                       '(2) – examine training with different parameters\n'
-                       '(3) – exit\n')
+        choice = ih.get_verified_input('What to do with the network:\n'
+                                       '(1) – examine shuffling training data\n'
+                                       '(2) – examine training with different parameters\n'
+                                       '(3) – exit\n', ['1', '2', '3'])
         if choice == '1':
             examine_shuffling(autoencoder_train_data)
         elif choice == '2':
             examine_training(autoencoder_train_data)
-        elif choice == '3':
-            break
         else:
-            print(' ! Invalid choice !')
+            break
