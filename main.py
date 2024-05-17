@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 from ucimlrepo import fetch_ucirepo
@@ -99,13 +101,63 @@ def test(neural_network, test_inputs, test_outputs, output_values=None):
 
         pl.plot_confusion_matrix(confusion_matrix, precision, recall, f_measure, filename='confusion_matrix.png')
 
-    fu.clear_outputs()
+    if not os.path.exists('stats/'):
+        os.makedirs('stats/')
+
+    samples_num = np.sum([len(i) for i in test_inputs])
+    df_layers = [f'Layer {j + 1}' for j in range(len(neural_network.layers))]
+    df_neurons = [f'Neuron {j + 1}' for j in range(max([len(k) for k in neural_network.layers]))]
+    df_samples = [f'Sample {i + 1}' for i in range(samples_num)]
+    total_in_out_exp_out = []
+    total_outputs = []
+    total_error_signals = []
+    total_loss = []
     for i, test_input_group in enumerate(test_inputs):
+        in_out_exp_out = []
+        outputs = []
+        error_signals = []
+        loss = []
         for j, test_input in enumerate(test_input_group):
             output = mlp.feedforward(test_input)
             output_formatted = [round(i, 2) for i in output]
             expected_output = test_outputs[i][j]
-            fu.save_outputs(output_formatted, expected_output)
+            in_out_exp_out.append([test_input, output_formatted, expected_output])
+            loss.append(neural_network.calculate_total_error(test_outputs[i][j]))
+            _, grad = neural_network.backpropagation(test_outputs[i][j])
+            error_signals.append(pd.DataFrame(grad, index=df_layers, columns=df_neurons))
+            outputs.append(pd.DataFrame([[neuron.output for neuron in layer] for layer in neural_network.layers],
+                                        index=df_layers,
+                                        columns=df_neurons))
+
+        total_in_out_exp_out.extend(in_out_exp_out)
+        total_outputs.extend(outputs)
+        total_error_signals.extend(error_signals)
+        total_loss.extend(loss)
+
+    weights = [[np.around(neuron.weights, decimals=2) for neuron in layer] for layer in neural_network.layers]
+    weights_df = pd.DataFrame(weights, index=df_layers, columns=df_neurons)
+    weights_df.index.name = 'Layer'
+    weights_df.to_csv('stats/weights.csv')
+
+    biases = [[neuron.bias for neuron in layer] for layer in neural_network.layers]
+    biases_df = pd.DataFrame(biases, index=df_layers, columns=df_neurons)
+    biases_df.index.name = 'Layer'
+    biases_df.to_csv('stats/biases.csv')
+
+    total_outputs_df = pd.concat(total_outputs, keys=df_samples, names=['Sample', 'Layer'])
+    total_outputs_df.to_csv('stats/outputs.csv')
+
+    total_error_signals_df = pd.concat(total_error_signals, keys=df_samples, names=['Sample', 'Layer'])
+    total_error_signals_df.to_csv('stats/error_signals.csv', float_format='%.6f')
+
+    total_loss_df = pd.DataFrame(total_loss, index=df_samples, columns=['Loss'])
+    total_loss_df.index.name = 'Sample'
+    total_loss_df.to_csv('stats/loss.csv')
+
+    in_out_exp_out_df = pd.DataFrame(total_in_out_exp_out, index=df_samples,
+                                     columns=['Input', 'Output', 'Expected output'])
+    in_out_exp_out_df.index.name = 'Sample'
+    in_out_exp_out_df.to_csv('stats/inputs_outputs_expected_outputs.csv')
 
     print(' <Testing statistics saved to files>')
 

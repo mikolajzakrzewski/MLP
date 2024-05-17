@@ -152,8 +152,8 @@ class NeuralNetwork:
 
         if save_values:
             train_accuracy = correct_train_predictions / len(train_data)
-            fu.save_training_accuracy(train_accuracy)
-            fu.save_training_error(train_error)
+            fu.save_stat(train_accuracy, 'training_accuracies')
+            fu.save_stat(train_error, 'training_errors')
 
         if valid_data is not None:
             valid_error = 0
@@ -167,8 +167,8 @@ class NeuralNetwork:
 
             if save_values:
                 valid_accuracy = correct_valid_predictions / len(valid_data)
-                fu.save_validation_accuracy(valid_accuracy)
-                fu.save_validation_error(valid_error)
+                fu.save_stat(valid_accuracy, 'validation_accuracies')
+                fu.save_stat(valid_error, 'validation_errors')
 
         if stop_err is not None:
             return prev_weight_grads, prev_bias_grads, train_error < stop_err
@@ -183,8 +183,10 @@ class NeuralNetwork:
         if epochs is None and stop_err is None:
             raise ValueError("Either epochs or stop_err must be specified")
 
-        fu.clear_errors()
-        fu.clear_accuracies()
+        fu.clear_stats('training_errors')
+        fu.clear_stats('training_accuracies')
+        fu.clear_stats('validation_errors')
+        fu.clear_stats('validation_accuracies')
         if epochs is not None and stop_err is None:
             for epoch in range(epochs):
                 if (epoch + 1) % 10 == 0:
