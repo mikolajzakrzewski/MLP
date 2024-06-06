@@ -27,7 +27,7 @@ def save_stat(stat, filename):
 
 def clear_stats(filename):
     if not os.path.exists('stats/'):
-        pass
+        return
 
     with open(os.path.join('stats/', filename + '.txt'), 'w'):
         pass
