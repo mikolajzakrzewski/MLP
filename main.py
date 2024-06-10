@@ -21,7 +21,7 @@ def create_network(input_size, output_size):
     )
 
 
-def train(neural_network, train_data, valid_data=None):
+def train(neural_network, train_data, valid_data=None, plot_accuracies=True):
     stop_condition = ih.get_verified_input('Stop condition:\n'
                                            '(1) – number of epochs\n'
                                            '(2) – total error\n'
@@ -42,7 +42,8 @@ def train(neural_network, train_data, valid_data=None):
     print(' <Training complete>')
     validation = True if valid_data is not None else False
     pl.plot_errors(filename='errors.png', validation=validation)
-    pl.plot_accuracies(filename='accuracies.png', validation=validation)
+    if plot_accuracies:
+        pl.plot_accuracies(filename='accuracies.png', validation=validation)
 
 
 def test(neural_network, test_inputs, test_outputs, output_values=None):
@@ -168,6 +169,7 @@ if __name__ == '__main__':
     test_data_inputs = None
     test_data_outputs = None
     classes_outputs = None
+    plot_accuracies = True
     task_choice = ih.get_verified_input('Choose a task:\n(1) – iris dataset classification\n(2) – autoencoder\n',
                                         ['1', '2'])
     if task_choice == '1':
@@ -207,6 +209,7 @@ if __name__ == '__main__':
             test_data_outputs.append([tuple(row) for row in iris_output_values[range_start:range_end]])
 
     else:
+        plot_accuracies = False
         test_data_inputs = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
         test_data_outputs = test_data_inputs
         training_data = [(values, values) for values in test_data_inputs]
@@ -224,7 +227,7 @@ if __name__ == '__main__':
         choice = ih.get_verified_input('What to do with the network:\n(1) – train\n(2) – test\n(3) – exit\n',
                                        ['1', '2', '3'])
         if choice == '1':
-            train(mlp, training_data, validation_data)
+            train(mlp, training_data, validation_data, plot_accuracies)
         elif choice == '2':
             test(mlp, test_data_inputs, test_data_outputs, classes_outputs)
         else:

@@ -116,24 +116,29 @@ class NeuralNetwork:
 
         return weight_grads[::-1], bias_grads[::-1]
 
-    def adjust(self, weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum):
+    def adjust(self, weight_grads, prev_weight_changes, bias_grads, prev_bias_changes, learning_rate, momentum):
+        weight_changes = []
+        bias_changes = []
         for i, layer in enumerate(self.layers):
-            weight_errs = np.array(weight_grads[i])
             weights = np.array([neuron.weights for neuron in layer])
-            weights -= learning_rate * weight_errs
-            bias_errs = np.array(bias_grads[i])
+            weight_change = learning_rate * np.array(weight_grads[i])
             biases = np.array([neuron.bias for neuron in layer])
-            biases -= learning_rate * bias_errs
-            if prev_weight_grads is not None and prev_bias_grads is not None:
-                prev_weight_errs = np.array(prev_weight_grads[i])
-                weights -= momentum * learning_rate * prev_weight_errs
-                prev_bias_errs = np.array(prev_bias_grads[i])
-                biases -= momentum * learning_rate * prev_bias_errs
+            bias_change = learning_rate * np.array(bias_grads[i])
+            if prev_weight_changes is not None and prev_bias_changes is not None:
+                weight_change += momentum * np.array(prev_weight_changes[i])
+                bias_change += momentum * np.array(prev_bias_changes[i])
+
+            weight_changes.append(weight_change)
+            bias_changes.append(bias_change)
+            weights -= weight_change
+            biases -= bias_change
 
             for j, neuron in enumerate(layer):
                 neuron.update(input_values=None, weights=weights[j], bias=biases[j])
 
-    def epoch(self, train_data, valid_data, prev_weight_grads, prev_bias_grads,
+        return weight_changes, bias_changes
+
+    def epoch(self, train_data, valid_data, prev_weight_changes, prev_bias_changes,
               learning_rate, stop_err, momentum, shuffle_samples, save_values):
         if shuffle_samples:
             random.shuffle(train_data)
@@ -147,8 +152,10 @@ class NeuralNetwork:
 
             weight_grads, bias_grads = self.backpropagation(sample[1])
             train_error += self.calculate_total_error(sample[1])
-            self.adjust(weight_grads, prev_weight_grads, bias_grads, prev_bias_grads, learning_rate, momentum)
-            prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
+            weight_changes, bias_changes = self.adjust(
+                weight_grads, prev_weight_changes, bias_grads, prev_bias_changes, learning_rate, momentum
+            )
+            prev_weight_changes, prev_bias_changes = weight_changes, bias_changes
 
         if save_values:
             train_accuracy = correct_train_predictions / len(train_data)
@@ -171,14 +178,14 @@ class NeuralNetwork:
                 fu.save_stat(valid_error, 'validation_errors')
 
         if stop_err is not None:
-            return prev_weight_grads, prev_bias_grads, train_error < stop_err
+            return prev_weight_changes, prev_bias_changes, train_error < stop_err
         else:
-            return prev_weight_grads, prev_bias_grads
+            return prev_weight_changes, prev_bias_changes
 
     def train(self, learning_rate, train_data, valid_data=None,
               epochs=None, stop_err=None, momentum=0.0, shuffle_samples=True):
-        prev_weight_grads = None
-        prev_bias_grads = None
+        prev_weight_changes = None
+        prev_bias_changes = None
 
         if epochs is None and stop_err is None:
             raise ValueError("Either epochs or stop_err must be specified")
@@ -194,11 +201,11 @@ class NeuralNetwork:
                 else:
                     save_values = False
 
-                weight_grads, bias_grads = self.epoch(
-                    train_data, valid_data, prev_weight_grads, prev_bias_grads,
+                weight_changes, bias_changes = self.epoch(
+                    train_data, valid_data, prev_weight_changes, prev_bias_changes,
                     learning_rate, stop_err, momentum, shuffle_samples, save_values
                 )
-                prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
+                prev_weight_changes, prev_bias_changes = weight_changes, bias_changes
 
         else:
             epoch = 1
@@ -211,12 +218,12 @@ class NeuralNetwork:
                 else:
                     save_values = False
 
-                weight_grads, bias_grads, stop_err_reached = self.epoch(
-                    train_data, valid_data, prev_weight_grads, prev_bias_grads,
+                weight_changes, bias_changes, stop_err_reached = self.epoch(
+                    train_data, valid_data, prev_weight_changes, prev_bias_changes,
                     learning_rate, stop_err, momentum, shuffle_samples, save_values
                 )
                 if stop_err_reached:
                     return
 
-                prev_weight_grads, prev_bias_grads = weight_grads, bias_grads
+                prev_weight_changes, prev_bias_changes = weight_changes, bias_changes
                 epoch += 1
